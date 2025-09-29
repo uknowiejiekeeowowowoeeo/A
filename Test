@@ -1,0 +1,729 @@
+local Starshot = {}
+
+local Themes = {
+	Dark = {
+		Gradient = Color3.fromRGB(44, 44, 44),
+		SecondGradient = Color3.fromRGB(31, 31, 31),
+		Accent = Color3.fromRGB(90, 90, 255),
+		Extra = Color3.fromRGB(255, 255, 255),
+		Text = Color3.fromRGB(255, 255, 255),
+		SubText = Color3.fromRGB(200, 200, 200),
+		Inactive = Color3.fromRGB(100, 100, 100)
+	},
+	Light = {
+		Gradient = Color3.fromRGB(240, 240, 240),
+		SecondGradient = Color3.fromRGB(220, 220, 220),
+		Accent = Color3.fromRGB(0, 120, 255),
+		Extra = Color3.fromRGB(0, 0, 0),
+		Text = Color3.fromRGB(20, 20, 20),
+		SubText = Color3.fromRGB(80, 80, 80),
+		Inactive = Color3.fromRGB(150, 150, 150)
+	},
+	Ocean = {
+		Gradient = Color3.fromRGB(20, 40, 90),
+		SecondGradient = Color3.fromRGB(15, 30, 70),
+		Accent = Color3.fromRGB(0, 170, 255),
+		Extra = Color3.fromRGB(180, 210, 255),
+		Text = Color3.fromRGB(235, 245, 255),
+		SubText = Color3.fromRGB(150, 170, 200),
+		Inactive = Color3.fromRGB(50, 70, 110)
+	},
+	Crimson = {
+		Gradient = Color3.fromRGB(60, 20, 20),
+		SecondGradient = Color3.fromRGB(40, 10, 10),
+		Accent = Color3.fromRGB(200, 40, 60),
+		Extra = Color3.fromRGB(255, 220, 220),
+		Text = Color3.fromRGB(255, 240, 240),
+		SubText = Color3.fromRGB(200, 150, 150),
+		Inactive = Color3.fromRGB(90, 50, 50)
+	},
+	Forest = {
+		Gradient = Color3.fromRGB(25, 50, 35),
+		SecondGradient = Color3.fromRGB(18, 36, 26),
+		Accent = Color3.fromRGB(50, 180, 90),
+		Extra = Color3.fromRGB(200, 240, 210),
+		Text = Color3.fromRGB(230, 250, 235),
+		SubText = Color3.fromRGB(160, 190, 170),
+		Inactive = Color3.fromRGB(50, 80, 60)
+	}
+}
+
+local CurrentTheme = Themes.Dark
+local CurrentFont = Enum.Font.GothamBold
+
+function Starshot.SetTheme(name)
+	if type(name) == "string" and Themes[name] then
+		CurrentTheme = Themes[name]
+	end
+end
+
+function Starshot.GetTheme()
+	return CurrentTheme
+end
+
+function Starshot.SetFont(font)
+	if typeof(font) == "EnumItem" and font.EnumType == Enum.Font then
+		CurrentFont = font
+	end
+end
+
+function Starshot.GetFont()
+	return CurrentFont
+end
+
+local function Shadow(obj)
+	local ui = Instance.new("ImageLabel")
+	ui.Image = "rbxassetid://1316045217"
+	ui.ImageTransparency = 0
+	ui.Size = UDim2.new(1, 20, 1, 20)
+	ui.Position = UDim2.new(0, -10, 0, -10)
+	ui.BackgroundTransparency = 1
+	ui.ZIndex = obj.ZIndex - 1
+	ui.Parent = obj
+end
+
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local function RoundCorners(obj, radius)
+	local c = Instance.new("UICorner")
+	c.Parent = obj
+	c.CornerRadius = radius or UDim.new(0, 16)
+end
+
+local TS = game:GetService("TweenService")
+local TI = TweenInfo.new(.35, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out)
+
+local CurrentTab = nil
+local ButtonHolder = nil
+local ContentHolder = nil
+
+function Starshot.CreateTab(TabTitle, Creator, Password, UsesPassword, ThemeName, LinkToCopy, ShowCopy)
+	Starshot.SetTheme(ThemeName or "Dark")
+	local Theme = Starshot.GetTheme()
+	local Font = Starshot.GetFont()
+
+	local AstraGUI = Instance.new("ScreenGui")
+	AstraGUI.Parent = game.Players.LocalPlayer.PlayerGui
+	AstraGUI.IgnoreGuiInset = true
+	AstraGUI.Name = "AstraGUI"
+
+	local AstraTab = Instance.new("Frame")
+	AstraTab.Parent = AstraGUI
+	AstraTab.Name = "AstraTab"
+	AstraTab.BackgroundColor3 = Theme.Gradient
+	AstraTab.BorderSizePixel = 0
+	AstraTab.Position = UDim2.new(0.5, 0, 0.5, 0)
+	AstraTab.Size = UDim2.new(0, 300, 0, 75)
+	AstraTab.AnchorPoint = Vector2.new(0.5, 0.5)
+	AstraTab.ClipsDescendants = true
+	RoundCorners(AstraTab, UDim.new(0, 16))
+
+	local Close = Instance.new("TextButton")
+	Close.Text = "X"
+	Close.TextScaled = true
+	Close.AnchorPoint = Vector2.new(.5,.5)
+	Close.Size = UDim2.new(.05,0,.05,.0)
+	Close.Position = UDim2.new(.9,0,.05,0)
+	Close.Parent = AstraTab
+	Close.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Close.BackgroundTransparency = 1
+	Close.MouseButton1Click:Connect(function()
+		AstraGUI:Destroy()
+	end)
+
+	local DragButton = Instance.new("TextButton")
+	DragButton.Parent = AstraTab
+	DragButton.Name = "DragButton"
+	DragButton.Text = ""
+	DragButton.Size = UDim2.new(.7, 0, .071, 0)
+	DragButton.AnchorPoint = Vector2.new(.5,.5)
+	DragButton.Position = UDim2.new(.5,0,1.01,0)
+	DragButton.BackgroundTransparency = .5
+	DragButton.ZIndex = 100
+	RoundCorners(DragButton, UDim.new(0, 16))
+
+	local dragging = false
+	local dragStart, startPos
+	Starshot._LockDrag = false
+
+	local function update(input)
+		local delta = input.Position - dragStart
+		local newPos = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+		TweenService:Create(AstraTab, TweenInfo.new(0.05, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = newPos}):Play()
+	end
+
+	DragButton.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 and not Starshot._LockDrag then
+			dragging = true
+			dragStart = input.Position
+			startPos = AstraTab.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			update(input)
+		end
+	end)
+
+	ButtonHolder = Instance.new("ScrollingFrame")
+	ButtonHolder.Parent = AstraTab
+	ButtonHolder.Name = "ButtonHolder"
+	ButtonHolder.BackgroundColor3 = Theme.SecondGradient
+	ButtonHolder.BorderSizePixel = 0
+	ButtonHolder.Position = UDim2.new(0.5, 0, 0.135, 0)
+	ButtonHolder.Size = UDim2.new(0.9, 0, 0.06, 0)
+	ButtonHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+	ButtonHolder.ScrollBarThickness = 4
+	ButtonHolder.AutomaticCanvasSize = Enum.AutomaticSize.X
+	ButtonHolder.BackgroundTransparency = 1
+	ButtonHolder.CanvasSize = UDim2.new(0, 0, 0, 0)
+	RoundCorners(ButtonHolder, UDim.new(0, 12))
+
+	local UIListLayoutBH = Instance.new("UIListLayout")
+	UIListLayoutBH.Parent = ButtonHolder
+	UIListLayoutBH.FillDirection = Enum.FillDirection.Horizontal
+	UIListLayoutBH.Padding = UDim.new(0, 6)
+	UIListLayoutBH.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	UIListLayoutBH.SortOrder = Enum.SortOrder.LayoutOrder
+
+	local UIPaddingBH = Instance.new("UIPadding")
+	UIPaddingBH.Parent = ButtonHolder
+	UIPaddingBH.PaddingLeft = UDim.new(0, 6)
+
+	ContentHolder = Instance.new("Frame")
+	ContentHolder.Parent = AstraTab
+	ContentHolder.Name = "ContentHolder"
+	ContentHolder.BackgroundTransparency = 1
+	ContentHolder.Position = UDim2.new(0.5, 0, 0.56, 0)
+	ContentHolder.Size = UDim2.new(0.9, 0, 0.78, 0)
+	ContentHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+
+	local TitleLabel = Instance.new("TextLabel")
+	TitleLabel.Parent = AstraTab
+	TitleLabel.Name = "TitleLabel"
+	TitleLabel.Text = TabTitle or ""
+	TitleLabel.Size = UDim2.new(1, -20, 0, 30)
+	TitleLabel.Position = UDim2.new(0, 10, 0, 5)
+	TitleLabel.BackgroundTransparency = 1
+	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	TitleLabel.Font = Font
+	TitleLabel.TextSize = 22
+	TitleLabel.TextColor3 = Theme.Text
+
+	local CreatorTextLabel = Instance.new("TextLabel")
+	CreatorTextLabel.Parent = AstraTab
+	CreatorTextLabel.Name = "CreatorText"
+	CreatorTextLabel.Text = Creator or ""
+	CreatorTextLabel.Size = UDim2.new(.8, -10, 0, 15)
+	CreatorTextLabel.Position = UDim2.new(0, 10, 0, 30)
+	CreatorTextLabel.BackgroundTransparency = 1
+	CreatorTextLabel.TextXAlignment = Enum.TextXAlignment.Left
+	CreatorTextLabel.Font = Font
+	CreatorTextLabel.TextSize = 18
+	CreatorTextLabel.TextColor3 = Theme.SubText
+
+	if not UsesPassword then
+		TS:Create(AstraTab, TI, {Size = UDim2.new(0.25, 0, 0.6, 0)}):Play()
+	else
+		local AstraGUI2 = Instance.new("ScreenGui")
+		AstraGUI2.Parent = game.Players.LocalPlayer.PlayerGui
+		AstraGUI2.IgnoreGuiInset = true
+		AstraGUI2.Name = "PassGui"
+
+		local BG = Instance.new("Frame")
+		BG.BackgroundColor3 = Theme.Gradient
+		BG.AnchorPoint = Vector2.new(.5,.5)
+		BG.Position = UDim2.new(.5,0,.5,0)
+		BG.Size = UDim2.new(.25,0,.25,0)
+		BG.Parent = AstraGUI2
+		RoundCorners(BG, UDim.new(0, 12))
+
+		local TextBox = Instance.new("TextBox")
+		TextBox.ClearTextOnFocus = false
+		TextBox.Parent = BG
+		TextBox.Size = UDim2.new(.8,0,.15,0)
+		TextBox.Position = UDim2.new(.5,0,.35,0)
+		TextBox.BackgroundColor3 = Theme.SecondGradient
+		TextBox.TextColor3  = Theme.Text
+		TextBox.Font = Font
+		TextBox.TextScaled = true
+		TextBox.AnchorPoint = Vector2.new(.5,.5)
+		RoundCorners(TextBox, UDim.new(0, 8))
+
+		local SubmitButton = Instance.new("TextButton")
+		SubmitButton.Parent = BG
+		SubmitButton.Size = UDim2.new(.8,0,.15,0)
+		SubmitButton.Position = UDim2.new(.5,0,.65,0)
+		SubmitButton.BackgroundColor3 = Theme.Accent
+		SubmitButton.TextColor3  = Theme.Extra
+		SubmitButton.Font = Font
+		SubmitButton.TextScaled = true
+		SubmitButton.AnchorPoint = Vector2.new(.5,.5)
+		SubmitButton.Text = "Submit Password"
+		RoundCorners(SubmitButton, UDim.new(0, 8))
+		
+		if ShowCopy == true then
+			local CopyButton = Instance.new("TextButton")
+			CopyButton.Parent = BG
+			CopyButton.Size = UDim2.new(.8,0,.15,0)
+			CopyButton.Position = UDim2.new(.5,0,.85,0)
+			CopyButton.BackgroundColor3 = Theme.Accent
+			CopyButton.TextColor3  = Theme.Extra
+			CopyButton.Font = Font
+			CopyButton.TextScaled = true
+			CopyButton.AnchorPoint = Vector2.new(.5,.5)
+			CopyButton.Text = "Copy Link"
+			RoundCorners(CopyButton, UDim.new(0, 8))
+			
+
+			CopyButton.MouseButton1Click:Connect(function()
+				print("CopyButton clicked!")
+
+				if setclipboard then
+					setclipboard(LinkToCopy)
+					print("Text copied to clipboard:", LinkToCopy)
+				end
+			end)
+		else
+			print("no copy.")
+		end
+		
+		SubmitButton.MouseButton1Click:Connect(function()
+			if TextBox.Text == Password then
+				TS:Create(BG, TI, {Size = UDim2.new(0,0,0,0)}):Play()
+				wait(.15)
+				TS:Create(AstraTab, TI, {Size = UDim2.new(0.23, 0, 0.63, 0)}):Play()
+				AstraGUI2:Destroy()
+			end
+		end)
+	end
+
+	CurrentTab = AstraTab
+	return AstraTab
+end
+
+function Starshot.CreateTextLabel(Parent, Text)
+	if not Parent then return end
+	local Theme = Starshot.GetTheme()
+	local Font = Starshot.GetFont()
+	local TextLabel = Instance.new("TextLabel")
+	TextLabel.Parent = Parent
+	TextLabel.Name = "TextLabel"
+	TextLabel.Size = UDim2.new(1, -12, 0, 35)
+	TextLabel.BackgroundTransparency = 0
+	TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel.Font = Font
+	TextLabel.TextScaled = true
+	TextLabel.TextColor3 = Theme.Text
+	TextLabel.BackgroundColor3 = Theme.Gradient
+	RoundCorners(TextLabel, UDim.new(0, 10))
+	TextLabel.Text = ""
+
+	local TextLabel2 = Instance.new("TextLabel")
+	TextLabel2.Parent = TextLabel
+	TextLabel2.Name = "InnerText"
+	TextLabel2.Size = UDim2.new(.8,0,.65,0)
+	TextLabel2.BackgroundTransparency = 1
+	TextLabel2.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel2.Font = Font
+	TextLabel2.TextScaled = true
+	TextLabel2.AnchorPoint = Vector2.new(.5,.5)
+	TextLabel2.Position = UDim2.new(.42,0,.5,0)
+	TextLabel2.TextColor3 = Theme.Text
+	TextLabel2.Text = Text or ""
+end
+
+function Starshot.CreateParagraph(Parent, Text)
+	if not Parent then return end
+	local Theme = Starshot.GetTheme()
+	local Font = Starshot.GetFont()
+	local TextLabel = Instance.new("TextLabel")
+	TextLabel.Parent = Parent
+	TextLabel.Name = "Paragraph"
+	TextLabel.Size = UDim2.new(1, -12, 0, 60)
+	TextLabel.BackgroundTransparency = 0
+	TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel.Font = Font
+	TextLabel.TextScaled = true
+	TextLabel.TextColor3 = Theme.Text
+	TextLabel.BackgroundColor3 = Theme.Gradient
+	RoundCorners(TextLabel, UDim.new(0, 10))
+	TextLabel.Text = ""
+
+	local TextLabel2 = Instance.new("TextLabel")
+	TextLabel2.Parent = TextLabel
+	TextLabel2.Name = "InnerParagraph"
+	TextLabel2.Size = UDim2.new(.92,0,.85,0)
+	TextLabel2.BackgroundTransparency = 1
+	TextLabel2.TextXAlignment = Enum.TextXAlignment.Left
+	TextLabel2.Font = Font
+	TextLabel2.TextWrapped = true
+	TextLabel2.TextScaled = false
+	TextLabel2.AnchorPoint = Vector2.new(.5,.5)
+	TextLabel2.Position = UDim2.new(.475,0,.5,0)
+	TextLabel2.TextColor3 = Theme.Text
+	TextLabel2.Text = Text or ""
+	TextLabel2.TextScaled = true
+end
+
+function Starshot.CreateSection(SectionTitle)
+	if not ButtonHolder or not ContentHolder then return end
+	local Theme = Starshot.GetTheme()
+	local Font = Starshot.GetFont()
+	local SectionButton = Instance.new("TextButton")
+	SectionButton.Parent = ButtonHolder
+	SectionButton.Name = SectionTitle .. "Button"
+	SectionButton.Size = UDim2.new(0, 78, 1, 0)
+	SectionButton.BackgroundColor3 = Theme.SecondGradient
+	SectionButton.TextColor3 = Theme.Text
+	SectionButton.Font = Font
+	SectionButton.Text = ""
+	SectionButton.TextScaled = true
+	RoundCorners(SectionButton, UDim.new(0, 14))
+	
+	local SectionName = Instance.new("TextLabel")
+	SectionName.Parent = SectionButton
+	SectionName.Size = UDim2.new(.9, -12, 0, 36)
+	SectionName.BackgroundColor3 = Theme.Gradient
+	SectionName.Text = SectionTitle
+	SectionName.Name = SectionTitle .. "Button"
+	SectionName.TextColor3 = Theme.Text
+	SectionName.Font = Font
+	SectionName.TextScaled = true
+	SectionName.BackgroundTransparency = 1
+	SectionName.BackgroundTransparency = 1
+	SectionName.Position = UDim2.new(.5,0,.5,0)
+	SectionName.Size = UDim2.new(.8,0,.8,0)
+	SectionName.AnchorPoint = Vector2.new(.5,.5)
+
+	local SectionFrame = Instance.new("ScrollingFrame")
+	SectionFrame.Parent = ContentHolder
+	SectionFrame.Name = SectionTitle .. "Frame"
+	SectionFrame.Size = UDim2.new(1, 0, 1, 0)
+	SectionFrame.BackgroundColor3 = Theme.SecondGradient
+	SectionFrame.Visible = false
+	SectionFrame.ScrollBarThickness = 6
+	SectionFrame.BackgroundTransparency = 0
+	RoundCorners(SectionFrame, UDim.new(0, 12))
+
+	local TextHolder = Instance.new("TextLabel")
+	TextHolder.Parent = SectionFrame
+	TextHolder.Size = UDim2.new(.9, -12, 0, 36)
+	TextHolder.BackgroundColor3 = Theme.Gradient
+	TextHolder.Text = SectionTitle
+	TextHolder.TextColor3 = Color3.fromRGB(132, 132, 132)
+	TextHolder.Font = Font
+	TextHolder.TextSize = 18
+	TextHolder.TextXAlignment = Enum.TextXAlignment.Left
+	TextHolder.BackgroundTransparency = 1
+	TextHolder.Position = UDim2.new(.45,0,.5,0)
+	TextHolder.AnchorPoint = Vector2.new(.5,.5)
+
+	local UIListLayout = Instance.new("UIListLayout")
+	UIListLayout.Parent = SectionFrame
+	UIListLayout.Padding = UDim.new(0, 6)
+	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+	local UIPadding = Instance.new("UIPadding")
+	UIPadding.Parent = SectionFrame
+	UIPadding.PaddingTop = UDim.new(0, 6)
+	UIPadding.PaddingLeft = UDim.new(0, 6)
+
+	UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		SectionFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + UIPadding.PaddingTop.Offset + 6)
+	end)
+
+	SectionButton.MouseButton1Click:Connect(function()
+		for _, frame in ipairs(ContentHolder:GetChildren()) do
+			if frame:IsA("ScrollingFrame") then
+				TS:Create(frame, TI, {BackgroundTransparency = 1}):Play()
+				frame.Visible = false
+			end
+		end
+		SectionFrame.Visible = true
+		SectionFrame.BackgroundTransparency = 1
+		TS:Create(SectionFrame, TI, {BackgroundTransparency = 0}):Play()
+	end)
+
+	return SectionFrame
+end
+
+function Starshot.CreateDivider(Section)
+	if not Section then return end
+	local Theme = Starshot.GetTheme()
+	local Frame = Instance.new("Frame")
+	Frame.Parent = Section
+	Frame.Name = "Divider"
+	Frame.Size = UDim2.new(1, 0, 0, 2)
+	Frame.Position = UDim2.new(0,0,0,0)
+	Frame.BackgroundColor3 = Theme.Extra
+	Frame.BackgroundTransparency = 1
+	RoundCorners(Frame, UDim.new(0, 4))
+end
+
+function Starshot.CreateButton(Section, Text, Callback)
+	if not Section then return end
+	local Theme = Starshot.GetTheme()
+	local Font = Starshot.GetFont()
+	local Button = Instance.new("TextButton")
+	Button.Parent = Section
+	Button.Size = UDim2.new(1, -12, 0, 36)
+	Button.BackgroundColor3 = Theme.Gradient
+	Button.Text = ""
+	Button.TextColor3 = Theme.Text
+	Button.Font = Font
+	Button.TextSize = 18
+	RoundCorners(Button, UDim.new(0, 8))
+
+	local TextHolder = Instance.new("TextLabel")
+	TextHolder.Parent = Button
+	TextHolder.Size = UDim2.new(.9, -12, 0, 36)
+	TextHolder.BackgroundColor3 = Theme.Gradient
+	TextHolder.Text = Text or ""
+	TextHolder.TextColor3 = Theme.Text
+	TextHolder.Font = Font
+	TextHolder.TextSize = 18
+	TextHolder.TextXAlignment = Enum.TextXAlignment.Left
+	TextHolder.BackgroundTransparency = 1
+	TextHolder.Position = UDim2.new(.45,0,.5,0)
+	TextHolder.AnchorPoint = Vector2.new(.5,.5)
+
+	Button.MouseEnter:Connect(function()
+		TS:Create(Button, TI, {BackgroundColor3 = Theme.Accent}):Play()
+	end)
+	Button.MouseLeave:Connect(function()
+		TS:Create(Button, TI, {BackgroundColor3 = Theme.Gradient}):Play()
+	end)
+
+	Button.MouseButton1Click:Connect(function()
+		if Callback then Callback() end
+	end)
+
+	return Button
+end
+
+function Starshot.CreateToggle(Section, Text, Default, Callback)
+	if not Section then return end
+	local Theme = Starshot.GetTheme()
+	local Font = Starshot.GetFont()
+	local Toggle = Instance.new("TextButton")
+	Toggle.Parent = Section
+	Toggle.Size = UDim2.new(1, -12, 0, 36)
+	Toggle.BackgroundColor3 = Theme.Gradient
+	Toggle.TextColor3 = Theme.Text
+	Toggle.Font = Font
+	Toggle.TextSize = 18
+	Toggle.Text = ""
+	RoundCorners(Toggle, UDim.new(0, 8))
+
+	local TextHolder = Instance.new("TextLabel")
+	TextHolder.Parent = Toggle
+	TextHolder.Size = UDim2.new(.9, -12, 0, 36)
+	TextHolder.BackgroundColor3 = Theme.Gradient
+	TextHolder.Text = Text or ""
+	TextHolder.TextColor3 = Theme.Text
+	TextHolder.Font = Font
+	TextHolder.TextSize = 18
+	TextHolder.TextXAlignment = Enum.TextXAlignment.Left
+	TextHolder.BackgroundTransparency = 1
+	TextHolder.Position = UDim2.new(.45,0,.5,0)
+	TextHolder.AnchorPoint = Vector2.new(.5,.5)
+
+	local State = Default and true or false
+	local Indicator = Instance.new("Frame")
+	Indicator.Parent = Toggle
+	Indicator.Size = UDim2.new(0, 22, 0, 22)
+	Indicator.Position = UDim2.new(1, -30, 0.5, -11)
+	Indicator.BackgroundColor3 = State and Theme.Accent or Theme.Inactive
+	RoundCorners(Indicator, UDim.new(0, 6))
+
+	Toggle.MouseButton1Click:Connect(function()
+		State = not State
+		TS:Create(Indicator, TI, {
+			BackgroundColor3 = State and Theme.Accent or Theme.Inactive
+		}):Play()
+		if Callback then Callback(State) end
+	end)
+
+	return Toggle
+end
+
+function Starshot.CreateSlider(Section, Text, Min, Max, Default, Callback)
+	if not Section then return end
+	local Theme = Starshot.GetTheme()
+	local Font = Starshot.GetFont()
+	local SliderFrame = Instance.new("Frame")
+	SliderFrame.Parent = Section
+	SliderFrame.Size = UDim2.new(1, -12, 0, 36)
+	SliderFrame.BackgroundColor3 = Theme.Gradient
+	RoundCorners(SliderFrame, UDim.new(0, 8))
+
+	local TextHolder = Instance.new("TextLabel")
+	TextHolder.Parent = SliderFrame
+	TextHolder.Size = UDim2.new(.9, -12, 0, 36)
+	TextHolder.BackgroundColor3 = Theme.Gradient
+	TextHolder.Text = (Text or "Slider") .. ": " .. tostring(Default or Min)
+	TextHolder.TextColor3 = Theme.Text
+	TextHolder.Font = Font
+	TextHolder.TextSize = 18
+	TextHolder.TextXAlignment = Enum.TextXAlignment.Left
+	TextHolder.BackgroundTransparency = 1
+	TextHolder.Position = UDim2.new(.45,0,.5,0)
+	TextHolder.AnchorPoint = Vector2.new(.5,.5)
+
+	local SliderBar = Instance.new("Frame")
+	SliderBar.Parent = SliderFrame
+	SliderBar.Position = UDim2.new(.72, 6, 0.5, 0)
+	SliderBar.AnchorPoint = Vector2.new(.5,.5)
+	SliderBar.Size = UDim2.new(.5, -12, 0, 8)
+	SliderBar.BackgroundColor3 = Theme.SecondGradient
+	RoundCorners(SliderBar, UDim.new(0, 6))
+
+	local Fill = Instance.new("Frame")
+	Fill.Parent = SliderBar
+	local minv = Min or 0
+	local maxv = Max or 100
+	local def = Default or minv
+	local frac = 0
+	if maxv > minv then frac = (def - minv) / (maxv - minv) end
+	Fill.Size = UDim2.new(frac, 0, 1, 0)
+	Fill.BackgroundColor3 = Theme.Accent
+	RoundCorners(Fill, UDim.new(0, 6))
+
+	local dragging = false
+
+	SliderBar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			Starshot._LockDrag = true
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+			Starshot._LockDrag = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			local percent = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
+			local value = math.floor(minv + (maxv - minv) * percent)
+			TS:Create(Fill, TI, {Size = UDim2.new(percent, 0, 1, 0)}):Play()
+			TextHolder.Text = (Text or "Slider") .. ": " .. tostring(value)
+			if Callback then Callback(value) end
+		end
+	end)
+
+	return SliderFrame
+end
+
+function Starshot.CreateDropdown(Section, Text, Options, Callback)
+	if not Section then return end
+	local Theme = Starshot.GetTheme()
+	local Font = Starshot.GetFont()
+	local Dropdown = Instance.new("TextButton")
+	Dropdown.Parent = Section
+	Dropdown.Size = UDim2.new(1, -12, 0, 36)
+	Dropdown.BackgroundColor3 = Theme.Gradient
+	Dropdown.Text = Text or ""
+	Dropdown.TextColor3 = Theme.Text
+	Dropdown.Font = Font
+	Dropdown.TextSize = 18
+	RoundCorners(Dropdown, UDim.new(0, 8))
+
+	local ListFrame = Instance.new("Frame")
+	ListFrame.Parent = Section
+	ListFrame.Size = UDim2.new(1, -12, 0, 0)
+	ListFrame.BackgroundColor3 = Theme.SecondGradient
+	ListFrame.ClipsDescendants = true
+	RoundCorners(ListFrame, UDim.new(0, 8))
+
+	local UIListLayout = Instance.new("UIListLayout")
+	UIListLayout.Parent = ListFrame
+	UIListLayout.Padding = UDim.new(0, 4)
+
+	local open = false
+	Dropdown.MouseButton1Click:Connect(function()
+		open = not open
+		local targetSize = open and (#Options * 34) or 0
+		TS:Create(ListFrame, TI, {Size = UDim2.new(1, -12, 0, targetSize)}):Play()
+	end)
+
+	for _, option in ipairs(Options or {}) do
+		local OptButton = Instance.new("TextButton")
+		OptButton.Parent = ListFrame
+		OptButton.Size = UDim2.new(1, 0, 0, 30)
+		OptButton.BackgroundColor3 = Theme.Gradient
+		OptButton.Text = option
+		OptButton.TextColor3 = Theme.Text
+		OptButton.Font = Font
+		OptButton.TextSize = 16
+		RoundCorners(OptButton, UDim.new(0, 6))
+
+		OptButton.MouseButton1Click:Connect(function()
+			Dropdown.Text = (Text or "Choose") .. ": " .. option
+			TS:Create(ListFrame, TI, {Size = UDim2.new(1, -12, 0, 0)}):Play()
+			open = false
+			if Callback then Callback(option) end
+		end)
+	end
+
+	return Dropdown, ListFrame
+end
+
+function Starshot.CreateNotification(Title, Text, WaitTime)
+	local Notification = Instance.new("Frame")
+	Notification.Size = UDim2.new(0.3, 0, 0, 50)
+	Notification.Position = UDim2.new(0.35, 0, -.2, 0)
+	Notification.BackgroundColor3 = CurrentTheme.Gradient
+	Notification.BackgroundTransparency = 0
+	Notification.Visible = false
+	Notification.Parent = game.Players.LocalPlayer.PlayerGui.AstraGUI
+	Notification.Visible = true
+	RoundCorners(Notification)
+
+	local TitleText = Instance.new("TextLabel")
+	TitleText.AnchorPoint = Vector2.new(.5,.5)
+	TitleText.Position = UDim2.new(.5,0,.2,0)
+	TitleText.Size = UDim2.new(.8,0,.3,0)
+	TitleText.BackgroundTransparency = 1
+	TitleText.Font = CurrentFont
+	TitleText.Parent = Notification
+	TitleText.Text = Title
+	TitleText.TextScaled = true
+	TitleText.TextColor3 = CurrentTheme.Text
+
+	local SubText = Instance.new("TextLabel")
+	SubText.AnchorPoint = Vector2.new(.5,.5)
+	SubText.Position = UDim2.new(.5,0,.6,0)
+	SubText.Size = UDim2.new(.8,0,.5,0)
+	SubText.BackgroundTransparency = 1
+	SubText.Font = CurrentFont
+	SubText.Parent = Notification
+	SubText.Text = Text
+	SubText.TextScaled = true
+	SubText.TextColor3 = CurrentTheme.Text
+
+	wait(.25)
+	TweenService:Create(Notification, TI, {Position = UDim2.new(0.35, 0, 0.1, 0)}):Play()
+	wait(WaitTime)
+	TweenService:Create(Notification, TI, {Position = UDim2.new(0.35, 0, -.2, 0)}):Play()
+	wait(.1)
+	Notification:Destroy()
+end
+
+return Starshot
