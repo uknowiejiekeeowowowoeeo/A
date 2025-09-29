@@ -735,7 +735,7 @@ function lib:Window(text, preset, closebind)
             SlideFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
             SlideFrame.BorderSizePixel = 0
             SlideFrame.Position = UDim2.new(0.0342647657, 0, 0.686091602, 0)
-            SlideFrame.Size = UDim2.new(0, 335, 0, 3)
+            SlideFrame.Size = UDim2.new(0, 335, 0, 8)
 
             CurrentValueFrame.Name = "CurrentValueFrame"
             CurrentValueFrame.Parent = SlideFrame
@@ -748,7 +748,7 @@ function lib:Window(text, preset, closebind)
             SlideCircle.BackgroundColor3 = PresetColor
             SlideCircle.BackgroundTransparency = 1.000
             SlideCircle.Position = UDim2.new((start or 0) / max, -6, -1.30499995, 0)
-            SlideCircle.Size = UDim2.new(0, 11, 0, 11)
+            SlideCircle.Size = UDim2.new(0, 20, 0, 20)
             SlideCircle.Image = "rbxassetid://3570695787"
             SlideCircle.ImageColor3 = PresetColor
 
@@ -782,29 +782,24 @@ function lib:Window(text, preset, closebind)
                 SliderValue.Text = tostring(value)
                 pcall(callback, value)
             end
-            SlideCircle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-    elseif input.UserInputType == Enum.UserInputType.Touch then
+            local runConn
+SlideCircle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         finger = input
+        runConn = RunService.RenderStepped:Connect(function()
+            if dragging and finger then
+                move(finger)
+            end
+        end)
     end
 end)
 
 SlideCircle.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
-    elseif input.UserInputType == Enum.UserInputType.Touch and input == finger then
+    if (input.UserInputType == Enum.UserInputType.MouseButton1) or (input.UserInputType == Enum.UserInputType.Touch and input == finger) then
         dragging = false
         finger = nil
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if dragging then
-        if input.UserInputType == Enum.UserInputType.MouseMovement or (input.UserInputType == Enum.UserInputType.Touch and input == finger) then
-            move(input)
-        end
+        if runConn then runConn:Disconnect() runConn = nil end
     end
 end)
 Tab.CanvasSize = UDim2.new(0, 0, 0, TabLayout.AbsoluteContentSize.Y)
