@@ -19,6 +19,12 @@ local function getService(name)
 	return if cloneref then cloneref(service) else service
 end
 
+local function Rainbow(speed)
+	local t = tick() * (speed or 1)
+	local hue = t % 1  -- giá trị từ 0 -> 1
+	return Color3.fromHSV(hue, 1, 1)
+end
+
 -- Loads and executes a function hosted on a remote URL. Cancels the request if the requested URL takes too long to respond.
 -- Errors with the function are caught and logged to the output
 local function loadWithTimeout(url: string, timeout: number?): ...any
@@ -267,19 +273,19 @@ local RayfieldLibrary = {
 	Flags = {},
 	Theme = {
 		Default = {
-			TextColor = Color3.fromRGB(240, 240, 240),
+			TextColor = Rainbow(2),
 
-			Background = Color3.fromRGB(25, 25, 25),
-			Topbar = Color3.fromRGB(34, 34, 34),
+			Background = Color3.fromRGB(15, 15, 15),
+			Topbar = Color3.fromRGB(30, 30, 30),
 			Shadow = Color3.fromRGB(20, 20, 20),
 
 			NotificationBackground = Color3.fromRGB(20, 20, 20),
 			NotificationActionsBackground = Color3.fromRGB(230, 230, 230),
 
-			TabBackground = Color3.fromRGB(80, 80, 80),
-			TabStroke = Color3.fromRGB(85, 85, 85),
+			TabBackground = Color3.fromRGB(70, 70, 70),
+			TabStroke = Color3.fromRGB(75, 75, 75),
 			TabBackgroundSelected = Color3.fromRGB(210, 210, 210),
-			TabTextColor = Color3.fromRGB(240, 240, 240),
+			TabTextColor = Rainbow(0.3),
 			SelectedTabTextColor = Color3.fromRGB(50, 50, 50),
 
 			ElementBackground = Color3.fromRGB(35, 35, 35),
@@ -288,13 +294,13 @@ local RayfieldLibrary = {
 			ElementStroke = Color3.fromRGB(50, 50, 50),
 			SecondaryElementStroke = Color3.fromRGB(40, 40, 40),
 
-			SliderBackground = Color3.fromRGB(50, 138, 220),
+			SliderBackground = Rainbow(0.3),
 			SliderProgress = Color3.fromRGB(50, 138, 220),
 			SliderStroke = Color3.fromRGB(58, 163, 255),
 
-			ToggleBackground = Color3.fromRGB(30, 30, 30),
-			ToggleEnabled = Color3.fromRGB(0, 146, 214),
-			ToggleDisabled = Color3.fromRGB(100, 100, 100),
+			ToggleBackground = Rainbow(0.3),
+			ToggleEnabled = Color3.fromRGB(0, 255, 0),
+			ToggleDisabled = Color3.fromRGB(255, 0, 0),
 			ToggleEnabledStroke = Color3.fromRGB(0, 170, 255),
 			ToggleDisabledStroke = Color3.fromRGB(125, 125, 125),
 			ToggleEnabledOuterStroke = Color3.fromRGB(100, 100, 100),
@@ -1173,9 +1179,9 @@ end
 
 local function Hide(notify: boolean?)
 	if MPrompt then
-		MPrompt.Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+		MPrompt.Title.TextColor3 = Rainbow(0.5)
 		MPrompt.Position = UDim2.new(0.5, 0, 0, -50)
-		MPrompt.Size = UDim2.new(0, 40, 0, 10)
+		MPrompt.Size = UDim2.new(0, 50, 0, 20)
 		MPrompt.BackgroundTransparency = 1
 		MPrompt.Title.TextTransparency = 1
 		MPrompt.Visible = true
@@ -1620,7 +1626,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 	LoadingFrame.Subtitle.Text = Settings.LoadingSubtitle or "Interface Suite"
 
 	if Settings.LoadingTitle ~= "Rayfield Interface Suite" then
-		LoadingFrame.Version.Text = "Rayfield UI"
+		LoadingFrame.Version.Text = " "
 	end
 
 	if Settings.Icon and Settings.Icon ~= 0 and Topbar:FindFirstChild('Icon') then
