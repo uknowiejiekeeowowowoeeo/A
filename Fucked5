@@ -273,7 +273,7 @@ local RayfieldLibrary = {
 	Flags = {},
 	Theme = {
 		Default = {
-			TextColor = Rainbow(2),
+			TextColor = Rainbow(5),
 
 			Background = Color3.fromRGB(15, 15, 15),
 			Topbar = Color3.fromRGB(30, 30, 30),
@@ -285,7 +285,7 @@ local RayfieldLibrary = {
 			TabBackground = Color3.fromRGB(70, 70, 70),
 			TabStroke = Color3.fromRGB(75, 75, 75),
 			TabBackgroundSelected = Color3.fromRGB(210, 210, 210),
-			TabTextColor = Rainbow(0.3),
+			TabTextColor = Rainbow(5),
 			SelectedTabTextColor = Color3.fromRGB(50, 50, 50),
 
 			ElementBackground = Color3.fromRGB(35, 35, 35),
@@ -294,17 +294,17 @@ local RayfieldLibrary = {
 			ElementStroke = Color3.fromRGB(50, 50, 50),
 			SecondaryElementStroke = Color3.fromRGB(40, 40, 40),
 
-			SliderBackground = Rainbow(0.3),
+			SliderBackground = Rainbow(5),
 			SliderProgress = Color3.fromRGB(50, 138, 220),
 			SliderStroke = Color3.fromRGB(58, 163, 255),
 
-			ToggleBackground = Rainbow(0.3),
+			ToggleBackground = Color3.fromRGB(0, 0, 0),
 			ToggleEnabled = Color3.fromRGB(0, 255, 0),
 			ToggleDisabled = Color3.fromRGB(255, 0, 0),
-			ToggleEnabledStroke = Color3.fromRGB(0, 170, 255),
+			ToggleEnabledStroke = Color3.fromRGB(125, 125, 125),
 			ToggleDisabledStroke = Color3.fromRGB(125, 125, 125),
 			ToggleEnabledOuterStroke = Color3.fromRGB(100, 100, 100),
-			ToggleDisabledOuterStroke = Color3.fromRGB(65, 65, 65),
+			ToggleDisabledOuterStroke = Color3.fromRGB(100, 100, 100),
 
 			DropdownSelected = Color3.fromRGB(40, 40, 40),
 			DropdownUnselected = Color3.fromRGB(30, 30, 30),
@@ -1179,7 +1179,7 @@ end
 
 local function Hide(notify: boolean?)
 	if MPrompt then
-		MPrompt.Title.TextColor3 = Rainbow(0.5)
+		MPrompt.Title.TextColor3 = Rainbow(5)
 		MPrompt.Position = UDim2.new(0.5, 0, 0, -50)
 		MPrompt.Size = UDim2.new(0, 50, 0, 20)
 		MPrompt.BackgroundTransparency = 1
@@ -1618,7 +1618,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 	LoadingFrame.Subtitle.TextTransparency = 1
 
 	if Settings.ShowText then
-		MPrompt.Title.Text = 'Show '..Settings.ShowText
+		MPrompt.Title.Text = Settings.ShowText
 	end
 
 	LoadingFrame.Version.TextTransparency = 1
